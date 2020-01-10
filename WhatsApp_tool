@@ -1,0 +1,361 @@
+import tkinter.scrolledtext
+import tkinter.ttk as ttk
+from tkinter import *
+from tkinter.ttk import *
+from selenium import webdriver
+from datetime import datetime
+import time
+
+driver = webdriver.Chrome('chromedriver.exe')
+driver.get('http://web.whatsapp.com')
+
+home = tkinter.Tk()
+home.title('WhatsApp')
+home.geometry('1320x700')
+# style
+style = ttk.Style()
+style.theme_use('xpnative')  # ('winnative', 'clam', 'alt', 'default', 'classic', 'vista', 'xpnative')
+style.configure("TRadiobutton", background="light green",
+                foreground="red", font=("arial", 15, "bold"))
+# Menu bar
+menu = tkinter.Menu(home)
+new_item = tkinter.Menu(menu, tearoff=0)
+new_item.add_command(label='New')
+new_item.add_separator()
+new_item.add_command(label='Exit')
+menu.add_cascade(label='File', font=('arial', 10, 'bold'), menu=new_item)
+
+menu.add_cascade(label='Tools', font=('arial', 10, 'bold'), menu=new_item)
+
+menu.add_cascade(label='View', menu=new_item)
+
+menu.add_cascade(label='Help', menu=new_item)
+home.config(menu=menu)
+# line separator
+tkinter.Label(home, text='', fg='white', bg='black').place(x=0, y=0, height=5, width=2000)
+
+
+# comment QR code alert
+def color_label(label):
+    counter = True
+
+    def count():
+        nonlocal counter
+        smart_mode.set(False if hack_mode.get() else True)
+        c_msg_mode.set(False) if hack_mode.get() else None
+        # h_spin.configure(state='normal') if smart_mode.get() else h_spin.configure(state='disabled')
+        # m_spin.configure(state='normal') if smart_mode.get() else m_spin.configure(state='disabled')
+        # s_spin.configure(state='normal') if smart_mode.get() else s_spin.configure(state='disabled')
+        cm_txt.configure(state='disabled') if hack_mode.get() or not c_msg_mode.get() else cm_txt.configure(
+            state='normal')
+        h_count.configure(state='normal') if hack_mode.get() else h_count.configure(state='disabled')
+
+        color = 'green' if counter else 'blue'
+        font = ('Engravers MT', 16, 'bold') if counter else ('Engravers MT', 15, 'bold')
+        counter = False if counter else True
+        label.config(fg=color, font=font)
+        label.after(1000, count)
+
+    count()
+
+
+msg1 = tkinter.Label(home, text='Scan QR code on the web browser window', font=('Engravers MT', 15, 'bold'),
+                     fg='green', bg='#CCD4FF')
+msg1.place(x=20, y=35, width=700, height=25, )
+
+# Modes
+smart_mode = tkinter.BooleanVar()
+hack_mode = tkinter.BooleanVar()
+c_msg_mode = tkinter.BooleanVar()
+smart_mode.set(True)
+c_msg_mode.set(False)
+chk1 = Checkbutton(home, text='Time Mode', var=smart_mode)
+chk2 = Checkbutton(home, text='Common Message Mode', var=c_msg_mode)
+chk3 = Checkbutton(home, text='Hack Mode', var=hack_mode)
+
+chk1.place(x=770, y=35)
+chk2.place(x=890, y=35)
+chk3.place(x=1070, y=35)
+
+
+def history():
+    hst = tkinter.Tk()
+    hst.title('History')
+    hst.geometry('1320x700')
+    tkinter.Label(hst, text='', fg='white', bg='black').place(x=0, y=0, height=5, width=2000)
+
+    tkinter.Label(hst, text='Name', font=('arial', 15, 'bold')).place(x=20, y=20)
+    tkinter.Label(hst, text='Message', font=('arial', 15, 'bold')).place(x=320, y=20)
+    tkinter.Label(hst, text='Time :   HH  :  mm :  ss', font=('arial', 15, 'bold')).place(x=700, y=20)
+    tkinter.Label(hst, text='Date', font=('arial', 15, 'bold')).place(x=1010, y=20)
+    tkinter.Label(hst, text='Count', font=('arial', 15, 'bold')).place(x=1110, y=20)
+
+    tkinter.Label(hst, text='', fg='white', bg='black').place(x=0, y=60, height=5, width=2000)
+    with open('history.txt', 'r') as file:
+        ihst = file.read()
+
+    scrl = tkinter.scrolledtext.ScrolledText(hst, bg='lightgray', font=('arial', 18,), height=22, width=99,
+                                             state='normal')
+    scrl.place(x=12, y=80)
+    scrl.insert('1.0', ihst)
+
+
+hstry = tkinter.Button(home, text='History', command=history, font=('arial', 8, 'bold'), width=10, height=1,
+                       fg='#F2FFE6',
+                       bg='#418e46')
+hstry.place(x=1200, y=35)
+
+# line separator
+tkinter.Label(home, text='', fg='white', bg='black').place(x=0, y=90, height=5, width=2000)
+
+# select name
+total_n_g = ['Click Refresh']
+combo_name = StringVar()
+tkinter.Label(home, text='Name', font=('arial', 15, 'bold')).place(x=20, y=70 + 50)
+combo = ttk.Combobox(home, font=('arial', 15,), textvariable=combo_name, state='readonly')
+combo['values'] = total_n_g
+combo.current(0)  # set the selected item
+combo.place(x=20, y=100 + 50)
+
+error_log = []  # Error log list
+
+
+# fetch contact names form WhatsApp
+
+def get_name():
+    try:
+        global total_n_g
+        group_list = [i.text for i in driver.find_elements_by_class_name('_3NWy8')]
+        name_list = [i.text for i in driver.find_elements_by_class_name('_3H4MS')]
+        total_n_g = group_list + name_list
+        total_n_g = list(set(total_n_g))
+        total_n_g.sort()
+        msg1.configure(text='QR Scanned ! Ready To Work ')
+        combo['values'] = ['Select Name'] + total_n_g
+        combo.current(0)
+    except Exception as e:
+        error_log.append(str(e))
+
+
+# Refresh Name button
+refresh_btn = tkinter.Button(home, text='Refresh Names', command=get_name, font=('arial', 12,), width=14, height=2,
+                             fg='#F2FFE6',
+                             bg='#418e46')
+refresh_btn.place(x=60, y=220)
+
+# text  Message to send
+tkinter.Label(home, text='Message', font=('arial', 15, 'bold')).place(x=320, y=70 + 50)
+txt_message = StringVar()
+e_txt = tkinter.Entry(home, textvariable=txt_message, font=('arial', 15,))
+e_txt.place(x=320, y=150, height=85, width=400)
+
+# common message to all
+tkinter.Label(home, text='Common Message for All', font=('arial', 15, 'bold')).place(x=320, y=240)
+#                         check Button
+c_m_chk = Checkbutton(home, var=c_msg_mode, state='disabled')
+c_m_chk.place(x=560, y=240)
+
+c_txt_message = StringVar()
+cm_txt = tkinter.Entry(home, textvariable=c_txt_message, font=('arial', 15,))
+cm_txt.place(x=320, y=275, height=90, width=400)
+
+# Enter Time
+l_time = tkinter.Label(home, text='Time :   HH  :  mm :  ss', font=('arial', 15, 'bold'))
+l_time.place(x=760, y=120)
+# check Button
+s_m_chk = Checkbutton(home, var=smart_mode, state='disabled')
+s_m_chk.place(x=810, y=120)
+
+hh, mm, ss = StringVar(), StringVar(), StringVar()
+h_spin = tkinter.Spinbox(home, from_=0, to=23, width=3, font=('arial', 15, 'bold'), textvariable=hh)
+h_spin.place(x=830, y=100 + 50)
+m_spin = tkinter.Spinbox(home, from_=0, to=59, width=3, font=('arial', 15, 'bold'), textvariable=mm)
+m_spin.place(x=890, y=100 + 50)
+s_spin = tkinter.Spinbox(home, from_=0, to=59, width=3, font=('arial', 15, 'bold'), textvariable=ss)
+s_spin.place(x=950, y=100 + 50)
+now = datetime.now()
+current = now.strftime("%H:%M:%S")
+hh.set(current[:2]), mm.set(current[3:5]), ss.set(current[6:8])
+
+# Enter Date
+# l_date = tkinter.Label(home, text='Date :   dd  :  mm :  yyyy', font=('arial', 15, 'bold'))
+# l_date.place(x=1020, y=120)
+# # # check Button
+# # s_m_chk = Checkbutton(home, var=smart_mode, state='disabled')
+# # s_m_chk.place(x=810, y=120)
+#
+# dmy = StringVar(), StringVar(), StringVar()
+# tkinter.Entry(home, text =)
+# now = datetime.now()
+# current_date = str(now.date())
+# dmy.set(current_date)
+
+# message count
+m_count = tkinter.StringVar()
+l_count = tkinter.Label(home, text='Count :', font=('arial', 15, 'bold'))
+l_count.place(x=760, y=200)
+h_count = tkinter.Spinbox(home, from_=1, to=100, width=3, font=('arial', 15, 'bold'), textvariable=m_count)
+h_count.place(x=860, y=200)
+count_chk = Checkbutton(home, var=hack_mode, state='disabled')
+count_chk.place(x=835, y=200)
+
+
+# information about each contact
+
+class ContactDetails:
+    cmn_msg = None
+
+    def __init__(self, name, message, t_time=None, d_time=None, im_count=1):
+        self.name = name
+        self.message = message
+        self.t_time = t_time
+        self.d_time = d_time
+        self.im_count = im_count
+
+
+# Button Add
+def add():
+    try:
+        global details_line_counter
+        details_line_counter += 1.0
+        bar['value'] = 0
+        bar_perc.config(text='0%')
+        name = str(combo_name.get())
+        message = str(e_txt.get())
+        message = message.replace('@name', name)
+        im_count = 1
+        ContactDetails.cmn_msg = str(c_txt_message.get())
+        if c_msg_mode.get() and not hack_mode.get():
+            message = ContactDetails.cmn_msg.format(*message.split(','))
+        if hack_mode.get():
+            im_count = int(m_count.get())
+
+        shh, smm, sss = str(hh.get()), str(mm.get()), str(ss.get())
+        a_time = shh + '  :   ' + smm + '  :   ' + sss
+
+        # calculating time
+
+        now = datetime.now()
+        current = now.strftime("%H:%M:%S")
+        cu = (int(current[:2]) * 3600) + (int(current[3:5]) * 60) + int(current[6:8])
+        ex = (int(shh) * 3600) + (int(smm) * 60) + (int(sss))
+        val = ex - cu
+        details_object_list.append(
+            ContactDetails(name, message, (shh, smm, sss,), val, im_count))  # creating object
+
+        message = message[:32] + '...   ' if len(message) >= 32 else (
+                message + ' ' * (70 - int(len(message) * 1.8)))
+        name = name[:25] if len(name) >= 25 else name + ' ' * (36 - int(len(name) * 1.6))
+
+        with open('history.txt', 'a') as file:
+            file.write(name + ' ' + message + ' ' + a_time + ' ' * 13 + str(
+                datetime.today().date()) + '         ' + str(im_count) + '\n')
+
+        im_count = 'HMC: ' + str(im_count) if im_count > 1 else ''
+
+        scr.insert(str(details_line_counter),
+                   name + ' ' + message + ' ' + a_time + ' ' * 20 + str(
+                       datetime.today().date()) + '  ' + im_count + '\n')
+
+    except Exception as e:
+        error_log.append(str(e))
+        # print(e)
+
+
+add_btn = tkinter.Button(home, text='Add', command=add, font=('arial', 12, 'bold'), width=10, height=2, fg='#F2FFE6',
+                         bg='#418e46')
+add_btn.place(x=1020, y=220, anchor=NW)
+
+
+# method to send message
+
+def re_play(to_send):
+    try:
+        name = to_send.name
+        count = to_send.im_count
+        msg = ' ' + to_send.message
+        # print(name, count, msg)
+        user = driver.find_element_by_xpath('//span[@title = "{}"]'.format(name))
+        user.click()
+        msg_box = driver.find_element_by_class_name('_13mgZ')
+        for i in range(count):
+            msg_box.send_keys(msg)
+            time.sleep(0.001)
+            driver.find_element_by_class_name('_3M-N-').click()
+    except Exception as e:
+        # print(e)
+        error_log.append(e)
+
+
+rre_play = re_play
+
+
+# play button
+def play():
+    try:
+        global details_object_list, rre_play
+        # print(details_object_list)
+        lendol, dol_count = len(details_object_list), 0
+        details_object_list.sort(key=lambda i: i.d_time, reverse=True)
+        play_btn.configure(state='disabled')
+        add_btn.configure(state='disabled')
+        refresh_btn.configure(state='disabled')
+        while details_object_list:
+            c_time = datetime.now().strftime("%H:%M:%S")
+            c_time_s = (int(c_time[:2]) * 3600) + (int(c_time[3:5]) * 60) + int(c_time[6:8])
+            r_time_s = (int(details_object_list[-1].t_time[0]) * 3600) + (
+                    int(details_object_list[-1].t_time[1]) * 60) + int(details_object_list[-1].t_time[2])
+            t_diff = r_time_s - c_time_s
+            if t_diff <= 0:
+                to_send = details_object_list.pop()
+                rre_play(to_send)
+                dol_count += 1
+                bar['value'] = (100 * dol_count) // lendol
+                bar_perc.config(text=str((100 * dol_count) // lendol) + '%')
+                time.sleep(2)
+            elif t_diff > 0:
+                time.sleep(t_diff)
+        ams = tkinter.Label(home, text='All Message Sent', font=('terminal', 15, 'bold'), fg='green')
+        ams.place(x=1020, y=330)
+    except Exception as e:
+        # print(e)
+        ams = tkinter.Label(home, text='Something Went Wrong', font=('terminal', 15, 'bold'), fg='red')
+        ams.place(x=1020, y=240)
+        error_log.append(e)
+    finally:
+        play_btn.configure(state='normal')
+        add_btn.configure(state='normal')
+        refresh_btn.configure(state='normal')
+
+
+play_btn = tkinter.Button(home, text='Play', command=play, font=('arial', 12, 'bold'), width=10, height=2, fg='#F2FFE6',
+                          bg='#418e46')
+play_btn.place(x=1170, y=220, anchor=NW)
+# line separator
+tkinter.Label(home, text='', fg='white', bg='black').place(x=0, y=390, height=5, width=2000)
+# added contacts and message
+tkinter.Label(home, text='Added Contacts', font=('arial', 15, 'bold')).place(x=20, y=400)
+
+# progressbar
+tkinter.Label(home, text='Progress : ', font=('arial', 15, 'bold')).place(x=760, y=400)
+style.configure("black.Horizontal.TProgressbar", background='black')
+bar = Progressbar(home, length=200, style='green.Horizontal.TProgressbar')
+bar['value'] = 0
+bar.place(x=880, y=408, width=320)
+bar_perc = tkinter.Label(home, text=str(bar['value']) + '%', font=('arial', 15, 'bold'))
+bar_perc.place(x=1220, y=402)
+# line separator
+tkinter.Label(home, text='', fg='white', bg='black').place(x=0, y=435, height=5, width=2000)
+# Added contact display for process
+tkinter.Label(home, text='Name', font=('arial', 15, 'bold')).place(x=20, y=440)
+tkinter.Label(home, text='Message', font=('arial', 15, 'bold')).place(x=320, y=440)
+tkinter.Label(home, text='Time :   HH  :  mm :  ss', font=('arial', 15, 'bold')).place(x=760, y=440)
+tkinter.Label(home, text='Date', font=('arial', 15, 'bold')).place(x=1070, y=440)
+# tkinter.Label(home, text='Date', font=('arial', 15, 'bold')).place(x=1120, y=440)
+#  scrolled text
+scr = tkinter.scrolledtext.ScrolledText(home, bg='lightgray', font=('arial', 18,), height=8, width=99, state='normal')
+scr.place(x=12, y=480)
+details_object_list = []  # objects
+details_line_counter = 0.0
+color_label(msg1)  # function is written at the top
+home.mainloop()
